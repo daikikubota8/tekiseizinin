@@ -133,7 +133,7 @@
 
     <div class="sub">③ アルバイト</div>
     <div class="grid">
-      <div class="fld"><label>時給</label><input type="number" id="wage" min="0" step="50"><span class="unit">円</span></div>
+      <div class="fld"><label>アルバイト時給（9月〜最終）</label><input type="number" id="wage" min="0" step="50"><span class="unit">円</span></div>
       <div class="fld"><label>1人の1日稼働</label><input type="number" id="shift" min="1" step="0.5"><span class="unit">h</span></div>
       <div class="fld"><label>現在のアルバイト在籍人数</label><input type="number" id="curPt" min="0" step="1"><span class="unit">人</span></div>
       <div class="fld"><label>アルバイト1人の月出勤日数</label><input type="number" id="ptDays" min="1" max="31" step="1"><span class="unit">日</span><div class="hint">在籍人数の換算に使用</div></div>
@@ -195,7 +195,7 @@
     <div class="ct"><span>全店まとめ（各店の入力内容は自動保存／行クリックで店舗別計算へ）</span><button class="pdfbtn" onclick="printSec('summary','全店まとめ')">📄 PDF</button></div>
     <div class="tw"><table style="min-width:1100px">
       <thead><tr>
-        <th>店舗</th><th>月間売上予算</th><th>目標<br>人件費率</th><th>人件費予算</th><th>社員<br>人員</th><th>営業時間<br>(準備含む)</th>
+        <th>店舗</th><th>月間売上予算</th><th>目標<br>人件費率</th><th>人件費予算</th><th>社員<br>人員</th><th>営業時間<br>(準備含む)</th><th>アルバイト<br>時給</th>
         <th>アルバイト<br>月予算</th><th>アルバイト<br>適正人員</th><th>現在の<br>アルバイト</th><th class="g2">過多・不足<br>(＋過剰/－不足)</th><th>平均配置<br>平日／週末</th><th>判定</th>
       </tr></thead>
       <tbody id="tbody3"></tbody>
@@ -218,11 +218,13 @@ STORES.forEach(x => { const d = DAY_STORES.includes(x.n); x.o = d ? 10.5 : 16; x
 const CUR = {'C上野':18,'C川崎':16,'C歌舞伎町':10,'C所沢':15,'C渋谷宇田川町':11,'C大宮':13,'C蒲田':14,'C立川':18,'C横浜鶴屋町':16,'C船橋':21,'C溝の口':14,'C錦糸町':21,'C柏':14,'C麻布十番':9,'C津田沼':15,'C田町芝浦':13,'C町田':17,'C京急蒲田':20,'C西新宿一丁目':17,'C新宿東南口':19,'C横浜西口':18,'Cたまプラーザ':21,'C平塚':19,'ナポリマン':24};
 STORES.forEach(x => { x.cur = CUR[x.n]; });
 const autoN = sales => Math.max(3, Math.round(sales / 2500000));   // 売上250万円につき1名・最低3名
+const WAGE = {'Cたまプラーザ':1300,'C横浜西口':1300,'C横浜鶴屋町':1300,'C歌舞伎町':1400,'C蒲田':1350,'C京急蒲田':1350,'C錦糸町':1300,'C溝の口':1300,'C渋谷宇田川町':1350,'C所沢':1200,'C上野':1350,'C新宿東南口':1400,'C西新宿一丁目':1400,'C川崎':1300,'C船橋':1250,'C大宮':1250,'C町田':1300,'C津田沼':1200,'C田町芝浦':1400,'C柏':1200,'C麻布十番':1500,'C立川':1300,'ナポリマン':1300,'C平塚':1300};   // 最終時給（9月〜）
+STORES.forEach(x => { x.wage = WAGE[x.n]; });
 const hhmm = h => { const t = h % 24; return Math.floor(t) + ':' + (t % 1 ? '30' : '00'); };
 const KEY = 'cona_staffing_calc_v6';
 const round50 = v => Math.round(v / 500000) * 500000;   // 50万円単位で四捨五入
-const GL  = ['days','salary','hotei','off','shHours','wage','shift','weight'];             // 全店共通
-const PER = ['nAuto','opH','sales','budgetMode','rate','amount','nStaff','curPt','ptDays'];               // 店舗ごと（自動保存）
+const GL  = ['days','salary','hotei','off','shHours','shift','weight'];             // 全店共通
+const PER = ['wage','nAuto','opH','sales','budgetMode','rate','amount','nStaff','curPt','ptDays'];               // 店舗ごと（自動保存）
 const S = Object.assign({}, DEF, { store: STORES[0].n });
 let ST = {};
 try {
@@ -234,7 +236,7 @@ try {
 } catch(e) {}
 function storeDefaults(st) {
   const sales = st.avg != null ? round50(st.avg) : 7000000;   // 売上実績のない店（C平塚）は700万円
-  return { opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:autoN(sales), nAuto:true, curPt:st.cur, ptDays:13 };
+  return { wage: st.wage, opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:autoN(sales), nAuto:true, curPt:st.cur, ptDays:13 };
 }
 function saveStore() { ST[S.store] = Object.fromEntries(PER.map(k => [k, S[k]])); }
 function loadStore(name) {
@@ -465,12 +467,12 @@ function renderAll() {
       else { T.curSum += S.curPt; T.diff += r.diff; status = Math.abs(r.diff) < 0.05 ? '適正' : r.diff > 0 ? '過剰' : '不足（増員）'; sc = status === '適正' ? 'b-ok' : status === '過剰' ? 'b-mid' : 'b-ng'; }
       tail = `<td>${yen(r.ptBudget)}</td><td style="font-weight:900">${f1(r.needHead)}人</td><td>${S.curPt == null ? '—' : S.curPt + '人'}</td><td class="diff ${dcls(r.diff)}">${sgn(r.diff)}</td>`;
     }
-    return `<tr class="click" onclick="gotoStore('${st.n}')"><td class="sl">${st.n}</td><td>${man(S.sales)}</td><td>${S.budgetMode === 'rate' ? S.rate + '%' : (S.sales > 0 ? (budget / S.sales * 100).toFixed(1) + '%' : '-')}</td><td>${man(budget)}</td><td style="font-weight:700">${S.nStaff}名</td><td>${S.opH}h</td>${tail}<td>${avg}</td><td><span class="badge ${sc}">${status}</span></td></tr>`;
+    return `<tr class="click" onclick="gotoStore('${st.n}')"><td class="sl">${st.n}</td><td>${man(S.sales)}</td><td>${S.budgetMode === 'rate' ? S.rate + '%' : (S.sales > 0 ? (budget / S.sales * 100).toFixed(1) + '%' : '-')}</td><td>${man(budget)}</td><td style="font-weight:700">${S.nStaff}名</td><td>${S.opH}h</td><td>${yen(S.wage)}</td>${tail}<td>${avg}</td><td><span class="badge ${sc}">${status}</span></td></tr>`;
   });
   Object.assign(S, cur);
-  rows.push(`<tr class="total"><td class="sl">合計</td><td>${man(T.sales)}</td><td>${T.sales ? (T.budget / T.sales * 100).toFixed(1) + '%' : '-'}</td><td>${man(T.budget)}</td><td>${T.staff}名</td><td></td><td>${yen(T.ptBudget)}</td><td>${f1(T.need)}人</td><td>${T.curSum}人</td><td class="diff ${dcls(T.diff)}">${T.unset === STORES.length ? '—' : sgn(T.diff)}</td><td></td><td></td></tr>`);
+  rows.push(`<tr class="total"><td class="sl">合計</td><td>${man(T.sales)}</td><td>${T.sales ? (T.budget / T.sales * 100).toFixed(1) + '%' : '-'}</td><td>${man(T.budget)}</td><td>${T.staff}名</td><td></td><td></td><td>${yen(T.ptBudget)}</td><td>${f1(T.need)}人</td><td>${T.curSum}人</td><td class="diff ${dcls(T.diff)}">${T.unset === STORES.length ? '—' : sgn(T.diff)}</td><td></td><td></td></tr>`);
   $('tbody3').innerHTML = rows.join('');
-  $('note3').innerHTML = `<b>計算の根拠</b>：人件費予算＝売上×目標人件費率（新評価L）／社員数＝売上÷250万円（四捨五入・最低3名）／アルバイト月予算＝人件費予算−社員人件費／適正人員＝月予算÷時給÷（1日5h×月出勤日数）を四捨五入／過多・不足＝現在−適正。詳細は各店の「店舗別計算」の「計算の根拠」を参照。<br>営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給${yen(S.wage)}・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期13日＝週3日平均）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
+  $('note3').innerHTML = `<b>計算の根拠</b>：人件費予算＝売上×目標人件費率（新評価L）／社員数＝売上÷250万円（四捨五入・最低3名）／アルバイト月予算＝人件費予算−社員人件費／適正人員＝月予算÷時給÷（1日5h×月出勤日数）を四捨五入／過多・不足＝現在−適正。詳細は各店の「店舗別計算」の「計算の根拠」を参照。<br>営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給は店舗ごと（9月〜の最終時給）・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期13日＝週3日平均）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
     `合計の適正人員・現在人数・差は予算超過店を除きます。現在人数が未入力の店舗は ${T.unset} 店（差の合計には含みません）。差は 現在 − 適正（＋＝過剰、−＝不足）。`;
 }
 
