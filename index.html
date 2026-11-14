@@ -114,8 +114,8 @@
 
     <div class="sub">② 社員</div>
     <div class="grid">
-      <div class="fld"><label>社員数（基準3名・増減可）</label>
-        <div class="stepper"><button type="button" id="nMinus">−</button><input type="number" id="nStaff" min="0" step="1"><button type="button" id="nPlus">＋</button></div></div>
+      <div class="fld"><label>社員数</label>
+        <div class="stepper"><button type="button" id="nMinus">−</button><input type="number" id="nStaff" min="0" step="1"><button type="button" id="nPlus">＋</button><button type="button" id="nAuto" style="width:48px;font-size:11px">自動</button></div><div class="hint" id="nHint"></div></div>
       <div class="fld"><label>月給（額面）</label><input type="number" id="salary" min="0" step="10000"><span class="unit">円</span></div>
       <div class="fld"><label>法定福利費率</label><input type="number" id="hotei" min="0" step="0.1"><span class="unit">%</span></div>
       <div class="fld"><label>月の休み</label><input type="number" id="off" min="0" max="31"><span class="unit">日</span></div>
@@ -175,6 +175,10 @@
     <p class="note">※ 人件費指定が「金額」の場合は、売上別一覧でも同じ金額を使います（率指定のときに使うと便利です）。</p>
   </div>
 
+  <div class="card" data-sec="basis">
+    <div class="ct"><span>計算の根拠（選択中の店舗の数字で表示）</span><button class="pdfbtn" onclick="printSec('basis','計算根拠')">📄 PDF</button></div>
+    <ol id="basis" style="padding-left:20px;font-size:13px;line-height:2"></ol>
+  </div>
 </div><!-- /tab-calc -->
 
 <div id="tab-all" style="display:none">
@@ -202,11 +206,14 @@ const IDS = ['opH','sales','budgetMode','rate','amount','days','nStaff','salary'
 const STORES = [{"n": "C上野", "rate": 27, "avg": 8857093, "m": 10}, {"n": "C川崎", "rate": 26, "avg": 14293438, "m": 10}, {"n": "C歌舞伎町", "rate": 27, "avg": 9959996, "m": 10}, {"n": "C所沢", "rate": 27, "avg": 7770046, "m": 10}, {"n": "C渋谷宇田川町", "rate": 27, "avg": 9233520, "m": 10}, {"n": "C大宮", "rate": 26, "avg": 15423481, "m": 10}, {"n": "C蒲田", "rate": 27, "avg": 8066429, "m": 10}, {"n": "C立川", "rate": 27, "avg": 10253346, "m": 10}, {"n": "C横浜鶴屋町", "rate": 26, "avg": 13790894, "m": 10}, {"n": "C船橋", "rate": 26, "avg": 12300069, "m": 10}, {"n": "C溝の口", "rate": 27, "avg": 8281826, "m": 10}, {"n": "C錦糸町", "rate": 28, "avg": 10222487, "m": 10}, {"n": "Cたまプラーザ", "rate": 27, "avg": 8667186, "m": 10}, {"n": "ナポリマン", "rate": 27, "avg": 7577079, "m": 10}, {"n": "C柏", "rate": 27, "avg": 9627771, "m": 10}, {"n": "C麻布十番", "rate": 28, "avg": 5626580, "m": 10}, {"n": "C津田沼", "rate": 27, "avg": 8053126, "m": 10}, {"n": "C田町芝浦", "rate": 27, "avg": 8549624, "m": 10}, {"n": "C町田", "rate": 29, "avg": 6185653, "m": 10}, {"n": "C京急蒲田", "rate": 28, "avg": 9226055, "m": 10}, {"n": "C新宿東南口", "rate": 27, "avg": 10328687, "m": 10}, {"n": "C西新宿一丁目", "rate": 27, "avg": 13836116, "m": 10}, {"n": "C横浜西口", "rate": 27, "avg": 9162357, "m": 7}, {"n": "C平塚", "rate": 27, "avg": null, "m": 0}];   // 目標人件費率（新評価 L）／2026年1〜10月の月平均売上
 const DAY_STORES = ['Cたまプラーザ','C麻布十番','C町田','ナポリマン'];   // 10:30〜23:00（準備含む）／他は16:00〜翌4:00
 STORES.forEach(x => { const d = DAY_STORES.includes(x.n); x.o = d ? 10.5 : 16; x.c = d ? 23 : 28; });
+const CUR = {'C上野':18,'C川崎':16,'C歌舞伎町':10,'C所沢':15,'C渋谷宇田川町':11,'C大宮':13,'C蒲田':14,'C立川':18,'C横浜鶴屋町':16,'C船橋':21,'C溝の口':14,'C錦糸町':21,'C柏':14,'C麻布十番':9,'C津田沼':15,'C田町芝浦':13,'C町田':17,'C京急蒲田':20,'C西新宿一丁目':17,'C新宿東南口':19,'C横浜西口':18,'Cたまプラーザ':21,'C平塚':19,'ナポリマン':24};
+STORES.forEach(x => { x.cur = CUR[x.n]; });
+const autoN = sales => Math.max(3, Math.round(sales / 2500000));   // 売上250万円につき1名・最低3名
 const hhmm = h => { const t = h % 24; return Math.floor(t) + ':' + (t % 1 ? '30' : '00'); };
-const KEY = 'cona_staffing_calc_v5';
+const KEY = 'cona_staffing_calc_v6';
 const round50 = v => Math.round(v / 500000) * 500000;   // 50万円単位で四捨五入
 const GL  = ['days','salary','hotei','off','shHours','wage','shift','weight'];             // 全店共通
-const PER = ['opH','sales','budgetMode','rate','amount','nStaff','curPt','ptDays'];               // 店舗ごと（自動保存）
+const PER = ['nAuto','opH','sales','budgetMode','rate','amount','nStaff','curPt','ptDays'];               // 店舗ごと（自動保存）
 const S = Object.assign({}, DEF, { store: STORES[0].n });
 let ST = {};
 try {
@@ -216,8 +223,8 @@ try {
   ST = j.ST || {};
 } catch(e) {}
 function storeDefaults(st) {
-  const sales = st.avg != null ? round50(st.avg) : 4500000;
-  return { opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:3, curPt:null, ptDays:15 };
+  const sales = st.avg != null ? round50(st.avg) : 7000000;   // 売上実績のない店（C平塚）は700万円
+  return { opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:autoN(sales), nAuto:true, curPt:st.cur, ptDays:15 };
 }
 function saveStore() { ST[S.store] = Object.fromEntries(PER.map(k => [k, S[k]])); }
 function loadStore(name) {
@@ -234,9 +241,9 @@ loadStore(S.store);
 const $ = id => document.getElementById(id);
 const yen = n => Math.round(n).toLocaleString('ja-JP') + '円';
 const man = n => (n/10000).toLocaleString('ja-JP', {maximumFractionDigits:1}) + '万円';
-const f1 = n => n.toFixed(1);
+const f1 = n => String(Math.round(n));   // 人数は四捨五入で整数表示
 const int = n => Math.round(n).toLocaleString('ja-JP');
-const sgn = n => n == null ? '未入力' : (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n).toFixed(1) + '人';
+const sgn = n => n == null ? '未入力' : (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(Math.round(n)) + '人';
 const dcls = n => n == null ? '' : Math.abs(n) < 0.05 ? 'zero' : n > 0 ? 'minus' : 'plus';
 
 function calc(sales, budget, nStaff, p) {
@@ -254,11 +261,12 @@ function calc(sales, budget, nStaff, p) {
   const staffHrs = p.workDays > 0 ? S.shHours / p.workDays : 0;          // 社員の1出勤あたり稼働時間
   const avgWd = (staffDay * staffHrs + ptWd * S.shift) / S.opH;          // 営業時間中の平均配置人数
   const avgWe = (staffDay * staffHrs + ptWe * S.shift) / S.opH;
-  const needHead = hrsMonth / (S.shift * S.ptDays);   // 適正アルバイト在籍人数
+  const needRaw = hrsMonth / (S.shift * S.ptDays);
+  const needHead = Math.round(needRaw);   // 適正アルバイト在籍人数
   return { ok:true, nStaff, staffCost, ptBudget, hrsMonth, ptWd, ptWe, staffDay,
            totWd: staffDay + ptWd, totWe: staffDay + ptWe, totalHrs,
            perHour: totalHrs > 0 ? sales / totalHrs : 0,
-           avgWd, avgWe, needHead, diff: S.curPt == null ? null : S.curPt - needHead };
+           avgWd, avgWe, needRaw, needHead, diff: S.curPt == null ? null : S.curPt - needHead };
 }
 function getBudget(sales) { return S.budgetMode === 'rate' ? sales * S.rate / 100 : S.amount; }
 const diffCell = r => `<td class="diff ${dcls(r.diff)}">${sgn(r.diff)}</td>`;
@@ -272,14 +280,42 @@ function applyStore(st) {
   $('budgetMode').value = S.budgetMode;
   persist(); sync(); render();
 }
+function renderBasis(r, p, budget, effRate) {
+  const st = STORES.find(x => x.n === S.store);
+  const [wWd, wWe] = WEIGHTS[S.weight];
+  const L = [];
+  L.push(`<b>目標人件費率</b>：新評価Lの数値（${st.n}＝${st.rate}%）。${S.budgetMode === 'rate' ? '現在の設定 ' + S.rate + '%' : '現在は金額指定'}。`);
+  L.push(`<b>月間売上予算</b>：2026年1〜10月の月平均売上${st.avg != null ? '（' + man(st.avg) + '）を50万円単位で四捨五入' : '（売上実績なしのため700万円で設定）'} → <b>${man(S.sales)}</b>。`);
+  L.push(`<b>人件費予算</b>＝売上 ${man(S.sales)} × ${effRate.toFixed(1)}% ＝ <b>${yen(budget)}</b>。`);
+  L.push(`<b>社員数</b>${S.nAuto ? '＝売上 ÷ 250万円 を四捨五入（' + (S.sales / 2500000).toFixed(2) + ' → ' + Math.round(S.sales / 2500000) + '名）、最低3名 → ' : '（手動設定）＝ '}<b>${S.nStaff}名</b>。`);
+  L.push(`<b>社員人件費</b>＝月給 ${yen(S.salary)} × (1＋法定福利費 ${S.hotei}%) ＝ ${yen(p.staffUnit)}／名 × ${S.nStaff}名 ＝ <b>${yen(S.nStaff * p.staffUnit)}</b>。`);
+  if (!r.ok) { L.push(`<b style="color:var(--ng)">社員人件費が人件費予算を ${yen(-r.ptBudget)} 超過</b>しているため、以降は計算できません。`); }
+  else {
+    L.push(`<b>アルバイト月予算</b>＝人件費予算 − 社員人件費 ＝ ${yen(budget)} − ${yen(r.staffCost)} ＝ <b>${yen(r.ptBudget)}</b>（アルバイトは額面）。`);
+    L.push(`<b>アルバイト月総時間</b>＝月予算 ÷ 時給 ${yen(S.wage)} ＝ <b>${int(r.hrsMonth)}h</b>。`);
+    L.push(`<b>アルバイト適正在籍人数</b>＝月総時間 ÷（1日${S.shift}h × 1人月${S.ptDays}日）＝ ${r.needRaw.toFixed(2)} → 四捨五入で <b>${r.needHead}人</b>。`);
+    L.push(`<b>現在との差</b>＝現在 ${S.curPt == null ? '（未入力）' : S.curPt + '人'} − 適正 ${r.needHead}人 ＝ <b>${sgn(r.diff)}</b>（＋＝過剰、−＝不足）。`);
+    L.push(`<b>アルバイトの1日の人数</b>：月総時間を営業日数 ${S.days}日に配分し、平日(月〜木)${Math.round(wWd*100)}%・週末(金〜日)${Math.round(wWe*100)}%の重みで按分 → 平日 ${(r.ptWd * S.shift).toFixed(1)}h ÷ ${S.shift}h ＝ <b>${f1(r.ptWd)}人</b>、週末 ${(r.ptWe * S.shift).toFixed(1)}h ÷ ${S.shift}h ＝ <b>${f1(r.ptWe)}人</b>。`);
+    L.push(`<b>社員の1日出勤</b>＝${S.nStaff}名 ×（${S.days}日 − 休み${S.off}日）÷ ${S.days}日 ＝ <b>${f1(r.staffDay)}人</b>（月${S.shHours}h稼働＝1出勤あたり約${(p.workDays ? S.shHours / p.workDays : 0).toFixed(1)}h）。`);
+    L.push(`<b>1日の合計人数</b>＝社員 ${f1(r.staffDay)}人 ＋ アルバイト → 平日 <b>${f1(r.totWd)}人</b>／週末 <b>${f1(r.totWe)}人</b>。`);
+    L.push(`<b>営業中の平均配置</b>＝（社員の出勤人数×1出勤の稼働時間 ＋ アルバイト人数×${S.shift}h）÷ 営業時間 ${S.opH}h → 平日 <b>${f1(r.avgWd)}人</b>／週末 <b>${f1(r.avgWe)}人</b>。`);
+    L.push(`<b>人時売上</b>＝売上 ÷（社員 ${S.nStaff}名×${S.shHours}h ＋ アルバイト ${int(r.hrsMonth)}h）＝ <b>${int(r.perHour)}円</b>。`);
+  }
+  L.push(`人数はすべて四捨五入の整数表示です（内部計算は小数で行い、最後に丸めています）。`);
+  $('basis').innerHTML = L.map(x => `<li>${x}</li>`).join('');
+}
 function render() {
+  if (S.nAuto) S.nStaff = autoN(S.sales);
+  if (document.activeElement !== $('nStaff')) $('nStaff').value = S.nStaff;
+  $('nHint').textContent = S.nAuto ? '自動：売上250万円につき1名（最低3名）' : '手動設定（「自動」で売上連動に戻す）';
+  $('nAuto').style.background = S.nAuto ? 'var(--red)' : '#fff'; $('nAuto').style.color = S.nAuto ? '#fff' : 'var(--red)';
   const p = { staffUnit: Math.round(S.salary * (1 + S.hotei/100)), workDays: Math.max(0, S.days - S.off) };
   const budget = getBudget(S.sales);
   const effRate = S.sales > 0 ? budget / S.sales * 100 : 0;
   $('salesMan').textContent = man(S.sales);
   const st = STORES.find(x => x.n === S.store);
   $('storeHint').textContent = !st ? '店舗を選ぶと目標人件費率と平均売上が自動入力されます'
-    : st.avg == null ? `目標人件費率 ${st.rate}%／売上実績なし（売上は手入力）`
+    : st.avg == null ? `目標人件費率 ${st.rate}%／売上実績なし（700万円で設定）`
     : `目標人件費率 ${st.rate}%／2026年${st.m}ヶ月平均 ${man(st.avg)} → ${man(round50(st.avg))}`;
   const stx = STORES.find(x => x.n === S.store);
   $('opHint').textContent = `標準 ${hhmm(stx.o)}〜${hhmm(stx.c)}（${stx.c - stx.o}h）`;
@@ -288,6 +324,7 @@ function render() {
   document.querySelectorAll('#wSeg button').forEach(b => b.classList.toggle('on', b.dataset.w === S.weight));
 
   const r = calc(S.sales, budget, S.nStaff, p);
+  renderBasis(r, p, budget, effRate);
   if (r.ok) {
     const verdict = r.diff == null ? '現在のアルバイト在籍人数を入力すると、過多・不足が出ます。' : Math.abs(r.diff) < 0.05 ? '現在の在籍人数が適正です。'
       : r.diff > 0 ? `現在より <b>${f1(r.diff)}人 多い（過剰）</b> 状態です。` : `現在より <b>${f1(-r.diff)}人 増員</b> が必要です。`;
@@ -364,13 +401,15 @@ IDS.forEach(id => {
       if (S.budgetMode === 'amount') S.amount = Math.round(S.sales * S.rate / 100);
       else if (S.sales > 0) S.rate = Math.round(S.amount / S.sales * 1000) / 10;
     }
+    if (id === 'nStaff') S.nAuto = false;
     if (S.days < 1) S.days = 1;
     if (S.shift < 0.5) S.shift = 0.5;
     if (S.ptDays < 1) S.ptDays = 1;
     persist(); sync(); render();
   });
 });
-function stepStaff(d) { S.nStaff = Math.max(0, Math.round(S.nStaff) + d); $('nStaff').value = S.nStaff; persist(); render(); }
+function stepStaff(d) { S.nAuto = false; S.nStaff = Math.max(0, Math.round(S.nStaff) + d); $('nStaff').value = S.nStaff; persist(); render(); }
+$('nAuto').addEventListener('click', () => { S.nAuto = true; persist(); render(); });
 $('nMinus').addEventListener('click', () => stepStaff(-1));
 $('nPlus').addEventListener('click', () => stepStaff(1));
 document.querySelectorAll('#wSeg button').forEach(b => b.addEventListener('click', () => {
@@ -405,6 +444,7 @@ function renderAll() {
   const rows = STORES.map(st => {
     const q = Object.assign(storeDefaults(st), st.n === S.store ? cur : (ST[st.n] || {}));
     Object.assign(S, q);
+    if (S.nAuto) S.nStaff = autoN(S.sales);
     const budget = getBudget(S.sales), r = calc(S.sales, budget, S.nStaff, p);
     T.sales += S.sales; T.budget += budget; T.staff += S.nStaff;
     let tail, status, sc = 'b-mid', avg = '—';
@@ -420,7 +460,7 @@ function renderAll() {
   Object.assign(S, cur);
   rows.push(`<tr class="total"><td class="sl">合計</td><td>${man(T.sales)}</td><td>${T.sales ? (T.budget / T.sales * 100).toFixed(1) + '%' : '-'}</td><td>${man(T.budget)}</td><td>${T.staff}名</td><td></td><td>${yen(T.ptBudget)}</td><td>${f1(T.need)}人</td><td>${T.curSum}人</td><td class="diff ${dcls(T.diff)}">${T.unset === STORES.length ? '—' : sgn(T.diff)}</td><td></td><td></td></tr>`);
   $('tbody3').innerHTML = rows.join('');
-  $('note3').innerHTML = `営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給${yen(S.wage)}・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期15日）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
+  $('note3').innerHTML = `<b>計算の根拠</b>：人件費予算＝売上×目標人件費率（新評価L）／社員数＝売上÷250万円（四捨五入・最低3名）／アルバイト月予算＝人件費予算−社員人件費／適正人員＝月予算÷時給÷（1日5h×月出勤日数）を四捨五入／過多・不足＝現在−適正。詳細は各店の「店舗別計算」の「計算の根拠」を参照。<br>営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給${yen(S.wage)}・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期15日）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
     `合計の適正人員・現在人数・差は予算超過店を除きます。現在人数が未入力の店舗は ${T.unset} 店（差の合計には含みません）。差は 現在 − 適正（＋＝過剰、−＝不足）。`;
 }
 
