@@ -86,6 +86,15 @@
     .tw{overflow:visible}
     input,select{border:none!important;padding:0!important;background:none!important;appearance:none;-webkit-appearance:none}
     .stepper button,.unit{display:none}
+    body[data-print=summary] .main{padding:0;max-width:none}
+    body[data-print=summary] .card{padding:0;border:none}
+    body[data-print=summary] .ct{font-size:11px;margin-bottom:6px;padding-bottom:4px}
+    body[data-print=summary] table{font-size:10.5px;width:100%}
+    body[data-print=summary] th{font-size:8.5px;padding:4px 2px;white-space:normal}
+    body[data-print=summary] td{padding:4px 2px;white-space:normal;line-height:1.25}
+    body[data-print=summary] .badge{font-size:8.5px;padding:1px 4px}
+    body[data-print=summary] .diff{font-size:10.5px}
+    body[data-print=summary] .note{font-size:8px;line-height:1.5;margin-top:6px}
   }
   @media(max-width:600px){.main{padding:14px 10px 50px}.card{padding:14px}}
 </style>
@@ -472,8 +481,12 @@ function printSec(key, name) {
   document.body.dataset.print = key;
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('print-this', c.dataset.sec === key));
   document.title = '適正人員計算_' + name;
-  const done = () => { delete document.body.dataset.print; document.title = t; window.removeEventListener('afterprint', done); };
+  const done = () => { const o = document.getElementById('pagestyle'); if (o) o.remove(); delete document.body.dataset.print; document.title = t; window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
+  const ps = document.createElement('style');
+  ps.id = 'pagestyle';
+  ps.textContent = '@page{size:' + (key === 'summary' ? 'A4 portrait;margin:8mm' : 'A4 landscape;margin:10mm') + '}';
+  document.head.appendChild(ps);
   window.print();
 }
 render();
