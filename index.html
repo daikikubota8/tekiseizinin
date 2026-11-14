@@ -200,7 +200,7 @@
 <script>
 const DEF = { sales:4500000, budgetMode:'rate', rate:27, amount:1215000, days:30,
               nStaff:3, salary:300000, hotei:16.2, off:9, shHours:200,
-              wage:1300, shift:5, curPt:10, ptDays:15, weight:'mild' };
+              wage:1300, shift:5, curPt:10, ptDays:13, weight:'mild' };
 const WEIGHTS = { flat:[1,1], mild:[.8,1.2], strong:[.7,1.4] };   // [平日 月〜木, 週末 金〜日]
 const IDS = ['opH','sales','budgetMode','rate','amount','days','nStaff','salary','hotei','off','shHours','wage','shift','curPt','ptDays'];
 const STORES = [{"n": "C上野", "rate": 27, "avg": 8857093, "m": 10}, {"n": "C川崎", "rate": 26, "avg": 14293438, "m": 10}, {"n": "C歌舞伎町", "rate": 27, "avg": 9959996, "m": 10}, {"n": "C所沢", "rate": 27, "avg": 7770046, "m": 10}, {"n": "C渋谷宇田川町", "rate": 27, "avg": 9233520, "m": 10}, {"n": "C大宮", "rate": 26, "avg": 15423481, "m": 10}, {"n": "C蒲田", "rate": 27, "avg": 8066429, "m": 10}, {"n": "C立川", "rate": 27, "avg": 10253346, "m": 10}, {"n": "C横浜鶴屋町", "rate": 26, "avg": 13790894, "m": 10}, {"n": "C船橋", "rate": 26, "avg": 12300069, "m": 10}, {"n": "C溝の口", "rate": 27, "avg": 8281826, "m": 10}, {"n": "C錦糸町", "rate": 28, "avg": 10222487, "m": 10}, {"n": "Cたまプラーザ", "rate": 27, "avg": 8667186, "m": 10}, {"n": "ナポリマン", "rate": 27, "avg": 7577079, "m": 10}, {"n": "C柏", "rate": 27, "avg": 9627771, "m": 10}, {"n": "C麻布十番", "rate": 28, "avg": 5626580, "m": 10}, {"n": "C津田沼", "rate": 27, "avg": 8053126, "m": 10}, {"n": "C田町芝浦", "rate": 27, "avg": 8549624, "m": 10}, {"n": "C町田", "rate": 29, "avg": 6185653, "m": 10}, {"n": "C京急蒲田", "rate": 28, "avg": 9226055, "m": 10}, {"n": "C新宿東南口", "rate": 27, "avg": 10328687, "m": 10}, {"n": "C西新宿一丁目", "rate": 27, "avg": 13836116, "m": 10}, {"n": "C横浜西口", "rate": 27, "avg": 9162357, "m": 7}, {"n": "C平塚", "rate": 27, "avg": null, "m": 0}];   // 目標人件費率（新評価 L）／2026年1〜10月の月平均売上
@@ -221,10 +221,11 @@ try {
   GL.forEach(k => { if (j.G && k in j.G) S[k] = j.G[k]; });
   if (j.store && STORES.some(x => x.n === j.store)) S.store = j.store;
   ST = j.ST || {};
+  Object.values(ST).forEach(v => { if (v && v.ptDays === 15) v.ptDays = 13; });   // 旧初期値15日→13日（週3日平均）
 } catch(e) {}
 function storeDefaults(st) {
   const sales = st.avg != null ? round50(st.avg) : 7000000;   // 売上実績のない店（C平塚）は700万円
-  return { opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:autoN(sales), nAuto:true, curPt:st.cur, ptDays:15 };
+  return { opH: st.c - st.o, sales, budgetMode:'rate', rate:st.rate, amount:Math.round(sales * st.rate / 100), nStaff:autoN(sales), nAuto:true, curPt:st.cur, ptDays:13 };
 }
 function saveStore() { ST[S.store] = Object.fromEntries(PER.map(k => [k, S[k]])); }
 function loadStore(name) {
@@ -460,7 +461,7 @@ function renderAll() {
   Object.assign(S, cur);
   rows.push(`<tr class="total"><td class="sl">合計</td><td>${man(T.sales)}</td><td>${T.sales ? (T.budget / T.sales * 100).toFixed(1) + '%' : '-'}</td><td>${man(T.budget)}</td><td>${T.staff}名</td><td></td><td>${yen(T.ptBudget)}</td><td>${f1(T.need)}人</td><td>${T.curSum}人</td><td class="diff ${dcls(T.diff)}">${T.unset === STORES.length ? '—' : sgn(T.diff)}</td><td></td><td></td></tr>`);
   $('tbody3').innerHTML = rows.join('');
-  $('note3').innerHTML = `<b>計算の根拠</b>：人件費予算＝売上×目標人件費率（新評価L）／社員数＝売上÷250万円（四捨五入・最低3名）／アルバイト月予算＝人件費予算−社員人件費／適正人員＝月予算÷時給÷（1日5h×月出勤日数）を四捨五入／過多・不足＝現在−適正。詳細は各店の「店舗別計算」の「計算の根拠」を参照。<br>営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給${yen(S.wage)}・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期15日）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
+  $('note3').innerHTML = `<b>計算の根拠</b>：人件費予算＝売上×目標人件費率（新評価L）／社員数＝売上÷250万円（四捨五入・最低3名）／アルバイト月予算＝人件費予算−社員人件費／適正人員＝月予算÷時給÷（1日5h×月出勤日数）を四捨五入／過多・不足＝現在−適正。詳細は各店の「店舗別計算」の「計算の根拠」を参照。<br>営業時間（準備含む）：たまプラーザ・麻布十番・町田・ナポリマンは10:30〜23:00（12.5h）、その他は16:00〜翌4:00（12h）。平均配置＝（社員の出勤人数×社員の1出勤稼働時間＋アルバイト人数×${S.shift}h）÷ 営業時間。<br>条件：社員1名＝月給${yen(S.salary)}＋法定福利費${S.hotei}%、アルバイト時給${yen(S.wage)}・1日${S.shift}h・1人月出勤日数は店舗ごとの設定（初期13日＝週3日平均）。社員人員は各店の「店舗別計算」で設定した人数（初期3名）。<br>` +
     `合計の適正人員・現在人数・差は予算超過店を除きます。現在人数が未入力の店舗は ${T.unset} 店（差の合計には含みません）。差は 現在 − 適正（＋＝過剰、−＝不足）。`;
 }
 
