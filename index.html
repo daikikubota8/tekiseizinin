@@ -6,75 +6,130 @@
 <title>適正人員 計算シート</title>
 <style>
   :root {
-    --red:#D42B2B; --red-dark:#A81F1F; --yellow:#F5C400;
-    --bg:#F7F7F5; --surface:#fff; --border:#E5E3DF;
-    --text:#1A1A1A; --text2:#6B6760; --muted:#9D9B97;
-    --ok:#2D8A4E; --okbg:#ECFDF3; --warn:#B45309; --warnbg:#FFF7E6; --ng:#C53030;
-    --shadow:0 1px 4px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+    --wine-950:#220810; --wine-800:#4A1020; --wine-700:#651728;
+    --red:#D42B2B; --red-dark:#651728; --yellow:#E8B64C; --gold:#E8B64C;
+    --bg:#EFEFF2; --surface:#FFFFFF; --border:#DEDDE3; --line:#ECEBEF;
+    --text:#17141A; --text2:#5E5A66; --muted:#8E8A97;
+    --ok:#1F8A4C; --okbg:#EAF7EF; --warn:#B45309; --warnbg:#FFF4E0; --ng:#C8303A; --over:#2B6CB0;
+    --mono:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
-  .header{background:var(--red);padding:14px 20px;display:flex;align-items:center;gap:12px}
-  .logo{font-size:18px;font-weight:900;color:#fff;letter-spacing:.08em;border:2.5px solid #fff;padding:2px 10px}
-  .htitle{font-size:13px;color:rgba(255,255,255,.9);font-weight:600}
-  .main{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
-  .ct{font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.06em;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-  label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-variant-numeric:tabular-nums}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  /* ヘッダー：ワインセラーの夜 */
+  .header{background:radial-gradient(1200px 220px at 85% -60%,rgba(212,43,43,.55),transparent 60%),linear-gradient(180deg,var(--wine-950),var(--wine-800));padding:16px 24px 14px;display:flex;align-items:center;gap:14px}
+  .logo{font-size:17px;font-weight:900;color:var(--wine-950);background:#fff;letter-spacing:.14em;padding:3px 11px 3px 14px;border-radius:3px}
+  .htitle{font-size:14px;color:rgba(255,255,255,.92);font-weight:600;letter-spacing:.04em}
+  .tabs{display:flex;gap:2px;background:var(--wine-800);padding:0 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .tabbtn{border:none;background:transparent;color:rgba(255,255,255,.62);padding:12px 18px 11px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;font-family:inherit;transition:color .15s,border-color .15s}
+  .tabbtn:hover{color:#fff}
+  .tabbtn.on{color:#fff;border-bottom-color:var(--gold)}
+  .main{max-width:1080px;margin:0 auto;padding:22px 16px 64px}
+  #tab-calc,#tab-all{animation:paneIn .24s ease-out}
+  @keyframes paneIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* カード */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 1px 0 rgba(23,20,26,.04);padding:20px 22px;margin-bottom:16px}
+  .ct{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;font-weight:800;color:var(--text);letter-spacing:.02em;margin-bottom:16px;padding:0 0 10px;border-bottom:1px solid var(--line)}
+  .ct>span{position:relative;padding-left:12px}
+  .ct>span::before{content:"";position:absolute;left:0;top:.2em;bottom:.2em;width:4px;border-radius:2px;background:var(--red)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:14px 14px}
+  label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
   .fld{position:relative}
-  input[type=number],select{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:9px 34px 9px 10px;font-size:15px;font-weight:700;font-family:inherit;background:#fff;color:var(--text)}
-  select{padding-right:10px}
-  input:focus,select:focus{outline:none;border-color:var(--red)}
-  .unit{position:absolute;right:10px;bottom:10px;font-size:12px;color:var(--muted);pointer-events:none}
-  .hint{font-size:11px;color:var(--muted);margin-top:3px}
-  .sub{font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 8px}
-  .seg{display:flex;gap:6px;flex-wrap:wrap}
-  .seg button{border:1.5px solid var(--border);background:#fff;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit}
-  .seg button.on{background:var(--red);border-color:var(--red);color:#fff}
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
-  .kpi{border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:#FCFCFB}
-  .kpi .l{font-size:11px;color:var(--muted);font-weight:600}
-  .kpi .v{font-size:20px;font-weight:900;margin-top:2px}
-  .kpi .s{font-size:11px;color:var(--text2)}
-  .kpi.hl{background:#FFF5F5;border-color:#F3C6C6}
-  .kpi.hl .v{color:var(--red)}
-  .result{background:var(--okbg);border-left:4px solid var(--ok);border-radius:6px;padding:14px 16px;font-size:14px;line-height:1.9}
-  .result b{font-size:17px;color:var(--red)}
+  input[type=number],select{width:100%;border:1px solid var(--border);border-radius:5px;padding:10px 34px 10px 12px;font-size:15px;font-weight:700;font-family:inherit;background:#F9F9FB;color:var(--text);transition:border-color .12s,box-shadow .12s,background .12s;font-variant-numeric:tabular-nums}
+  select{padding-right:10px;cursor:pointer}
+  input:hover,select:hover{border-color:#C9C7D0}
+  input:focus,select:focus{outline:none;border-color:var(--red);background:#fff;box-shadow:0 0 0 3px rgba(212,43,43,.16)}
+  .unit{position:absolute;right:11px;top:37px;font-size:12px;color:var(--muted);pointer-events:none}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .sub{font-size:12px;font-weight:800;color:var(--wine-700);margin:20px 0 10px;display:flex;align-items:center;gap:10px}
+  .sub::after{content:"";flex:1;height:1px;background:var(--line)}
+  .seg{display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--border);border-radius:5px;overflow:hidden;width:fit-content;max-width:100%}
+  .seg button{border:none;border-right:1px solid var(--border);background:#fff;padding:8px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:inherit;transition:background .12s,color .12s}
+  .seg button:last-child{border-right:none}
+  .seg button:hover{background:#F6F5F8}
+  .seg button.on{background:var(--wine-800);color:#fff}
+
+  /* ヒーロー（選択中の店舗） */
+  .hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px 32px;align-items:center;padding:22px 26px;background:linear-gradient(115deg,#fff 0%,#fff 58%,#F7EEF0 100%);border-left:6px solid var(--red)}
+  .hero-name{font-size:34px;font-weight:900;line-height:1.15;letter-spacing:.01em;color:var(--wine-950)}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
+  .hero-meta span{font-size:12px;font-weight:700;color:var(--text2);background:#F3F2F6;border-radius:4px;padding:3px 9px}
+  .hero-verdict{margin-top:14px;display:flex;align-items:baseline;gap:10px}
+  .hero-verdict .big{font-size:30px;font-weight:900;line-height:1}
+  .hero-verdict .txt{font-size:13px;font-weight:800;padding:3px 10px;border-radius:4px;background:#F3F2F6;color:var(--text2)}
+  .hero-verdict .txt.over{background:#E3EEF9;color:var(--over)}
+  .hero-verdict .txt.short{background:#FCE6E8;color:var(--ng)}
+  .hero-verdict .txt.fit{background:#DDF3E6;color:var(--ok)}
+  .gauge{display:grid;gap:12px}
+  .g-row{display:grid;grid-template-columns:34px 1fr 62px;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--text2)}
+  .g-row b{font-size:17px;color:var(--text);text-align:right;font-weight:900}
+  .g-track{height:16px;background:#ECEAF0;border-radius:3px;overflow:hidden;position:relative}
+  .g-bar{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:3px;transition:width .55s cubic-bezier(.2,.8,.2,1),background .25s}
+  .g-bar.need{background:linear-gradient(90deg,var(--wine-800),var(--wine-700))}
+  .g-bar.cur{background:#A9A6B3}
+  .g-bar.cur.over{background:var(--over)}
+  .g-bar.cur.short{background:var(--ng)}
+  .g-bar.cur.fit{background:var(--ok)}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin-bottom:16px}
+  .kpi{border:1px solid var(--line);border-top:3px solid #D9D7E0;border-radius:5px;padding:11px 13px 10px;background:#FBFBFC}
+  .kpi .l{font-size:11px;color:var(--text2);font-weight:700}
+  .kpi .v{font-size:23px;font-weight:900;margin-top:3px;line-height:1.2;letter-spacing:-.01em}
+  .kpi .s{font-size:11px;color:var(--muted);margin-top:1px}
+  .kpi.hl{background:linear-gradient(160deg,var(--wine-800),var(--wine-950));border-color:var(--wine-950);border-top-color:var(--gold)}
+  .kpi.hl .l{color:rgba(255,255,255,.72)}
+  .kpi.hl .v{color:#fff}
+  .kpi.hl .s{color:var(--gold)}
+  .result{background:#FAF7F8;border-left:4px solid var(--wine-700);border-radius:4px;padding:14px 18px;font-size:14px;line-height:2}
+  .result b{font-size:16px;color:var(--wine-700);font-weight:900}
   .result.ng{background:var(--warnbg);border-color:var(--warn)}
-  .tw{overflow-x:auto}
-  table{border-collapse:collapse;width:100%;font-size:13px;min-width:860px}
-  th{background:var(--red-dark);color:#fff;font-weight:600;font-size:11px;padding:8px 6px;text-align:center;white-space:nowrap}
-  th.g2{background:#9B1C1C}
-  td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
-  td.l{text-align:left;font-weight:700}
-  tr.rec td{background:#F0FDF4}
-  tr.rec td.l{border-left:4px solid var(--ok)}
-  tr.cur td{background:#FFFBEB}
-  tr.cur td.l{border-left:4px solid var(--yellow)}
+
+  /* 表 */
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:5px}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;min-width:860px}
+  th{background:var(--wine-800);color:#fff;font-weight:700;font-size:11px;padding:9px 7px;text-align:center;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08)}
+  th:last-child{border-right:none}
+  th.g2{background:var(--wine-700)}
+  td{padding:9px 7px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.l{text-align:left;font-weight:800}
+  tr.rec td{background:#F0FAF4}
+  tr.rec td.l{box-shadow:inset 4px 0 0 var(--ok)}
+  tr.cur td{background:#FFF7E3}
+  tr.cur td.l{box-shadow:inset 4px 0 0 var(--gold)}
   tr.ng td{color:var(--muted)}
-  .tot{font-weight:900;color:var(--red);font-size:15px;background:#FFF5F5}
-  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-  .b-ok{background:#D1FADF;color:#05603A}
-  .b-mid{background:#F3F4F6;color:#4B5563}
-  .b-ng{background:#FEE4E2;color:#B42318}
-  .note{font-size:11px;color:var(--muted);line-height:1.8;margin-top:10px}
-  .ct{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .pdfbtn{border:1.5px solid var(--red);background:#fff;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
-  .pdfbtn:hover{background:var(--red);color:#fff}
-  .pdfall{background:#fff;color:var(--red);border:none;margin-left:auto;padding:6px 12px;font-size:12px}
-  .stepper{display:flex;gap:6px}
-  .stepper button{width:40px;border:1.5px solid var(--border);background:#fff;border-radius:7px;font-size:20px;font-weight:700;cursor:pointer;color:var(--red);font-family:inherit}
-  .stepper button:active{background:#FFF5F5}
-  .stepper input{text-align:center;padding:9px 6px}
+  .tot{font-weight:900;color:var(--wine-700);font-size:15px;background:#FAF3F5}
+  tr.click{cursor:pointer;transition:background .1s} tr.click:hover td{background:#FFF7E3}
+  tr.total td{background:#F1F0F4;font-weight:900;border-top:2px solid var(--wine-800)}
+  td.sl{text-align:left;font-weight:800}
+  .badge{display:inline-block;padding:2px 9px;border-radius:3px;font-size:11px;font-weight:800}
+  .b-ok{background:#D7F1E0;color:#0F6A39}
+  .b-mid{background:#E5E8F3;color:#3A4A78}
+  .b-ng{background:#FBDFE2;color:#A4222C}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.85;margin-top:12px}
   .diff{font-weight:900;font-size:15px}
-  .plus{color:var(--ng)} .minus{color:#2B6CB0} .zero{color:var(--ok)}
-  .tabs{display:flex;gap:4px;background:var(--red-dark);padding:0 12px}
-  .tabbtn{border:none;background:transparent;color:rgba(255,255,255,.7);padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;font-family:inherit}
-  .tabbtn.on{color:#fff;border-bottom-color:var(--yellow)}
-  tr.click{cursor:pointer} tr.click:hover td{background:#FFFBEB}
-  tr.total td{background:#F3F4F6;font-weight:900;border-top:2px solid var(--text2)}
-  td.sl{text-align:left;font-weight:700}
+  .plus{color:var(--ng)} .minus{color:var(--over)} .zero{color:var(--ok)}
+  .dbar{display:block;position:relative;height:4px;width:60px;background:#E7E5EC;margin:3px auto 0;border-radius:2px}
+  .dbar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#9C98A8}
+  .dbar b{position:absolute;top:0;bottom:0;border-radius:2px}
+  .dbar b.p{left:50%;background:var(--over)}
+  .dbar b.n{right:50%;background:var(--ng)}
+
+  /* ボタン */
+  .pdfbtn{border:1px solid var(--border);background:#fff;color:var(--wine-700);border-radius:4px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+  .pdfbtn:hover{background:var(--wine-800);color:#fff;border-color:var(--wine-800)}
+  .pdfall{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.28);margin-left:auto;padding:7px 13px;font-size:12px}
+  .pdfall:hover{background:#fff;color:var(--wine-950);border-color:#fff}
+  .stepper{display:flex;gap:6px}
+  .stepper button{width:42px;border:1px solid var(--border);background:#fff;border-radius:5px;font-size:20px;font-weight:700;cursor:pointer;color:var(--wine-700);font-family:inherit;transition:background .12s}
+  .stepper button:hover{background:#F6F0F2}
+  .stepper button:active{background:#EFE3E6}
+  .stepper input{text-align:center;padding:10px 6px}
+
   @page{size:A4 landscape;margin:10mm}
   @media print{
     body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -85,7 +140,9 @@
     table{min-width:0!important;font-size:11px}
     .tw{overflow:visible}
     input,select{border:none!important;padding:0!important;background:none!important;appearance:none;-webkit-appearance:none}
-    .stepper button,.unit{display:none}
+    .stepper button,.unit,.dbar{display:none}
+    .header{background:#2B0A12!important}
+    .hero{break-inside:avoid}
     body[data-print=summary] .main{padding:0;max-width:none}
     body[data-print=summary] .card{padding:0;border:none}
     body[data-print=summary] .ct{font-size:11px;margin-bottom:6px;padding-bottom:4px}
@@ -96,7 +153,9 @@
     body[data-print=summary] .diff{font-size:10.5px}
     body[data-print=summary] .note{font-size:8px;line-height:1.5;margin-top:6px}
   }
-  @media(max-width:600px){.main{padding:14px 10px 50px}.card{padding:14px}}
+  @media(max-width:760px){.hero{grid-template-columns:1fr}.hero-name{font-size:28px}}
+  @media(max-width:600px){.main{padding:14px 10px 50px}.card{padding:15px 14px}.header{padding:13px 14px}.tabs{padding:0 8px}.htitle{font-size:12px}.pdfall{display:none}.tabbtn{padding:11px 12px 10px}}
+  @media(prefers-reduced-motion:reduce){#tab-calc,#tab-all{animation:none}.g-bar{transition:none}*{scroll-behavior:auto}}
 </style>
 </head>
 <body>
@@ -104,6 +163,19 @@
 <div class="tabs"><button class="tabbtn on" data-t="calc" onclick="showTab('calc')">🧮 店舗別計算</button><button class="tabbtn" data-t="all" onclick="showTab('all')">📊 全店まとめ</button></div>
 <div class="main">
 <div id="tab-calc">
+
+  <!-- 選択中の店舗 -->
+  <div class="card hero" data-sec="hero">
+    <div>
+      <div class="hero-name" id="heroName"></div>
+      <div class="hero-meta" id="heroMeta"></div>
+      <div class="hero-verdict" id="heroVerdict"></div>
+    </div>
+    <div class="gauge" aria-label="適正人数と現在人数の比較">
+      <div class="g-row"><span>適正</span><div class="g-track"><i class="g-bar need" id="gNeed"></i></div><b id="gNeedV">—</b></div>
+      <div class="g-row"><span>現在</span><div class="g-track"><i class="g-bar cur" id="gCur"></i></div><b id="gCurV">—</b></div>
+    </div>
+  </div>
 
   <!-- 入力 -->
   <div class="card" data-sec="input">
@@ -281,7 +353,8 @@ function calc(sales, budget, nStaff, p) {
            avgWd, avgWe, needRaw, needHead, diff: S.curPt == null ? null : S.curPt - needHead };
 }
 function getBudget(sales) { return S.budgetMode === 'rate' ? sales * S.rate / 100 : S.amount; }
-const diffCell = r => `<td class="diff ${dcls(r.diff)}">${sgn(r.diff)}</td>`;
+const dbar = d => d == null ? '' : `<i class="dbar"><b class="${d > 0 ? 'p' : 'n'}" style="width:${Math.min(50, Math.abs(d) / 15 * 50)}%"></b></i>`;
+const diffCell = r => `<td class="diff ${dcls(r.diff)}">${sgn(r.diff)}${dbar(r.diff)}</td>`;
 
 function applyStore(st) {
   if (!st) return;
@@ -291,6 +364,27 @@ function applyStore(st) {
   S.amount = Math.round(S.sales * S.rate / 100);
   $('budgetMode').value = S.budgetMode;
   persist(); sync(); render();
+}
+function stx0() { return STORES.find(x => x.n === S.store); }
+function renderHero(r, st) {
+  $('heroName').textContent = S.store;
+  $('heroMeta').innerHTML = [`目標人件費率 ${st.rate}%`, `営業 ${hhmm(st.o)}〜${hhmm(st.c)}`, `時給 ${yen(S.wage)}`, `社員 ${S.nStaff}名`].map(t => `<span>${t}</span>`).join('');
+  let big = '—', cls = '', txt = '', need = 0, cur = 0;
+  if (!r.ok) { txt = '社員人件費が予算超過'; }
+  else {
+    need = r.needHead; cur = S.curPt == null ? 0 : S.curPt;
+    if (r.diff == null) { txt = '現在人数を入力'; }
+    else if (Math.abs(r.diff) < 0.5) { big = '±0人'; cls = 'fit'; txt = '適正'; }
+    else if (r.diff > 0) { big = sgn(r.diff); cls = 'over'; txt = '過剰'; }
+    else { big = sgn(r.diff); cls = 'short'; txt = '不足（増員）'; }
+  }
+  $('heroVerdict').innerHTML = `<span class="big ${r.ok && r.diff != null ? dcls(r.diff) : ''}">${big}</span><span class="txt ${cls}">${txt}</span>`;
+  const max = Math.max(need, cur, 1) * 1.12;
+  $('gNeed').style.width = (need / max * 100) + '%';
+  $('gCur').style.width = (cur / max * 100) + '%';
+  $('gCur').className = 'g-bar cur ' + cls;
+  $('gNeedV').textContent = r.ok ? need + '人' : '—';
+  $('gCurV').textContent = (r.ok && S.curPt != null) ? S.curPt + '人' : '—';
 }
 function renderBasis(r, p, budget, effRate) {
   const st = STORES.find(x => x.n === S.store);
@@ -337,6 +431,7 @@ function render() {
 
   const r = calc(S.sales, budget, S.nStaff, p);
   renderBasis(r, p, budget, effRate);
+  renderHero(r, stx0());
   if (r.ok) {
     const verdict = r.diff == null ? '現在のアルバイト在籍人数を入力すると、過多・不足が出ます。' : Math.abs(r.diff) < 0.05 ? '現在の在籍人数が適正です。'
       : r.diff > 0 ? `現在より <b>${f1(r.diff)}人 多い（過剰）</b> 状態です。` : `現在より <b>${f1(-r.diff)}人 増員</b> が必要です。`;
@@ -465,7 +560,7 @@ function renderAll() {
       T.ptBudget += r.ptBudget; T.need += r.needHead; avg = `${f1(r.avgWd)}／${f1(r.avgWe)}人`;
       if (r.diff == null) { T.unset++; status = '未入力'; }
       else { T.curSum += S.curPt; T.diff += r.diff; status = Math.abs(r.diff) < 0.05 ? '適正' : r.diff > 0 ? '過剰' : '不足（増員）'; sc = status === '適正' ? 'b-ok' : status === '過剰' ? 'b-mid' : 'b-ng'; }
-      tail = `<td>${yen(r.ptBudget)}</td><td style="font-weight:900">${f1(r.needHead)}人</td><td>${S.curPt == null ? '—' : S.curPt + '人'}</td><td class="diff ${dcls(r.diff)}">${sgn(r.diff)}</td>`;
+      tail = `<td>${yen(r.ptBudget)}</td><td style="font-weight:900">${f1(r.needHead)}人</td><td>${S.curPt == null ? '—' : S.curPt + '人'}</td><td class="diff ${dcls(r.diff)}">${sgn(r.diff)}${dbar(r.diff)}</td>`;
     }
     return `<tr class="click" onclick="gotoStore('${st.n}')"><td class="sl">${st.n}</td><td>${man(S.sales)}</td><td>${S.budgetMode === 'rate' ? S.rate + '%' : (S.sales > 0 ? (budget / S.sales * 100).toFixed(1) + '%' : '-')}</td><td>${man(budget)}</td><td style="font-weight:700">${S.nStaff}名</td><td>${S.opH}h</td><td>${yen(S.wage)}</td>${tail}<td>${avg}</td><td><span class="badge ${sc}">${status}</span></td></tr>`;
   });
